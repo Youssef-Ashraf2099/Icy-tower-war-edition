@@ -670,6 +670,29 @@ html, body {
 }
 
 /* ═══════════════════════════════════════════════════════════════
+   BASE SCREEN MODALS & OVERLAYS
+   ═══════════════════════════════════════════════════════════════ */
+
+.screen-modal {
+  position: absolute;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(3, 6, 12, 0.88);
+  backdrop-filter: blur(10px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+
+.screen-modal.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* ═══════════════════════════════════════════════════════════════
    AUTHENTIC CONCEPT MAIN MENU — WAR CITADEL TITLE SCREEN
    ═══════════════════════════════════════════════════════════════ */
 
@@ -1251,7 +1274,205 @@ html, body {
 .dstat-val.red   { color: var(--war-red);      text-shadow: 0 0 10px rgba(255,34,51,0.5); }
 .dstat-val.green { color: var(--radar-green);  text-shadow: 0 0 10px rgba(0,255,119,0.5); }
 
-.debrief-actions { display: flex; flex-direction: column; gap: 10px; }
+.debrief-actions { 
+  display: flex; 
+  flex-direction: column; 
+  gap: 12px; 
+  width: 100%;
+  margin-top: 6px;
+}
+
+.btn-mission-primary,
+.btn-mission-checkpoint {
+  width: 100%;
+  min-height: 56px;
+  display: flex;
+  align-items: stretch;
+  justify-content: space-between;
+  border-radius: 6px;
+  cursor: pointer;
+  overflow: hidden;
+  position: relative;
+  border: 1px solid transparent;
+  transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.2s ease, filter 0.2s ease, border-color 0.2s ease;
+  outline: none;
+  padding: 0;
+  text-decoration: none;
+}
+
+.btn-mission-primary {
+  background: linear-gradient(135deg, #d97706 0%, #b45309 50%, #92400e 100%);
+  border-color: rgba(255, 170, 0, 0.6);
+  box-shadow: 0 0 24px rgba(255, 170, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+
+.btn-mission-primary:hover {
+  transform: translateY(-2px);
+  border-color: #fef08a;
+  box-shadow: 0 0 36px rgba(255, 170, 0, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  filter: brightness(1.08);
+}
+
+.btn-mission-primary:active {
+  transform: translateY(1px);
+}
+
+.btn-mission-checkpoint {
+  background: linear-gradient(135deg, #0891b2 0%, #0e7490 50%, #155e75 100%);
+  border-color: rgba(0, 240, 255, 0.6);
+  box-shadow: 0 0 24px rgba(0, 240, 255, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+
+.btn-mission-checkpoint:hover {
+  transform: translateY(-2px);
+  border-color: #a5f3fc;
+  box-shadow: 0 0 36px rgba(0, 240, 255, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  filter: brightness(1.08);
+}
+
+.btn-mission-checkpoint:active {
+  transform: translateY(1px);
+}
+
+.btn-mission-primary::after,
+.btn-mission-checkpoint::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 60%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.25), transparent);
+  transform: skewX(-20deg);
+  transition: left 0.6s ease;
+  pointer-events: none;
+}
+
+.btn-mission-primary:hover::after,
+.btn-mission-checkpoint:hover::after {
+  left: 150%;
+}
+
+.btn-mission-icon-wrap {
+  width: 58px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.35);
+  border-right: 1px solid rgba(255, 255, 255, 0.12);
+  flex-shrink: 0;
+}
+
+.checkpoint-icon-bg {
+  background: rgba(0, 0, 0, 0.45);
+}
+
+.btn-mission-icon {
+  font-size: 22px;
+  filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.6));
+  display: block;
+  line-height: 1;
+  color: #ffffff;
+}
+
+.btn-mission-text-wrap {
+  flex: 1;
+  padding: 10px 16px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  text-align: left;
+}
+
+.btn-mission-label {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 900;
+  letter-spacing: 2px;
+  color: #ffffff;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.6);
+}
+
+.btn-mission-sub {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.8);
+  margin-top: 2px;
+  letter-spacing: 0.5px;
+}
+
+.btn-mission-arrow {
+  display: flex;
+  align-items: center;
+  font-size: 20px;
+  font-weight: 900;
+  color: rgba(255, 255, 255, 0.6);
+  padding-right: 18px;
+  flex-shrink: 0;
+  transition: transform 0.2s ease, color 0.2s ease;
+}
+
+.btn-mission-primary:hover .btn-mission-arrow,
+.btn-mission-checkpoint:hover .btn-mission-arrow {
+  transform: translateX(4px);
+  color: #ffffff;
+}
+
+.cyan-arrow {
+  color: var(--neon-cyan);
+}
+
+/* Tutorial / Controls Modal Content */
+.controls-list-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 50vh;
+  overflow-y: auto;
+  padding-right: 6px;
+}
+
+.ctrl-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 5px;
+  padding: 8px 12px;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.ctrl-row:hover {
+  background: rgba(0, 240, 255, 0.05);
+  border-color: rgba(0, 240, 255, 0.3);
+}
+
+.key-badge {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  color: var(--neon-cyan);
+  background: rgba(0, 240, 255, 0.12);
+  border: 1px solid rgba(0, 240, 255, 0.4);
+  border-radius: 4px;
+  padding: 4px 10px;
+  min-width: 90px;
+  text-align: center;
+  box-shadow: 0 0 8px rgba(0, 240, 255, 0.2);
+  flex-shrink: 0;
+}
+
+.ctrl-desc {
+  font-family: var(--font-hud);
+  font-size: 13px;
+  color: #cbd5e1;
+  letter-spacing: 0.5px;
+}
 
 @media (max-width: 768px) {
   .menu-concept-container {

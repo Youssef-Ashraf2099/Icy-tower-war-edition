@@ -16,64 +16,158 @@
 <body>
   <!-- Full-Width Responsive Game Viewport -->
   <div id="game-container">
+    <!-- Interactive Animated SVG Cyber-Citadel Background System -->
+    <div id="interactive-bg-wrap" class="interactive-bg-wrap"></div>
+
     <canvas id="game-canvas"></canvas>
 
     <!-- Retro CRT Scanline Overlay -->
     <div id="crt-overlay" class="crt-overlay"></div>
 
-    <!-- In-Game Clean HUD -->
+    <!-- In-Game Clean HUD (Inspired by combat_ui_hud.png) -->
     <div id="hud" class="hud-layer">
-      <!-- Top Left: Armor & Adrenaline -->
-      <div class="hud-panel hud-top-left">
-        <div class="hud-stat-row">
-          <span class="hud-tag">ARMOR</span>
-          <div class="hud-bar-frame">
+      <!-- Top Left: Military Armor (HP) & Adrenaline (ADR) cyber angled bars -->
+      <div class="hud-panel hud-top-left combat-hud-card">
+        <!-- HP Row -->
+        <div class="hud-stat-cyber-row">
+          <div class="hud-hex-badge hp-hex">
+            <span class="hex-text">HP</span>
+          </div>
+          <div class="hud-bar-frame hp-frame">
             <div id="hp-bar" class="hud-bar-fill hp-fill" style="width: 100%;"></div>
-            <span id="hp-text" class="hud-bar-val">100 / 100</span>
+            <div class="hud-bar-grid"></div>
+            <span id="hp-text" class="hud-bar-val-overlay">100 / 100</span>
           </div>
         </div>
-        <div class="hud-stat-row">
-          <span class="hud-tag">ADRENALINE</span>
-          <div class="hud-bar-frame">
+        <!-- ADR Row -->
+        <div class="hud-stat-cyber-row adr-stat-row">
+          <div class="hud-hex-badge adr-hex">
+            <span class="hex-symbol">⚡</span>
+            <span class="hex-sub-lbl">ADR</span>
+          </div>
+          <div class="hud-bar-frame adr-frame">
             <div id="adrenaline-bar" class="hud-bar-fill adrenaline-fill" style="width: 0%;"></div>
-            <span id="adrenaline-text" class="hud-bar-val">0%</span>
+            <div class="hud-bar-grid"></div>
+            <span id="adrenaline-text" class="hud-bar-val-overlay">0%</span>
           </div>
         </div>
       </div>
 
-      <!-- Top Center: Elevation & Score -->
-      <div class="hud-panel hud-top-center">
-        <div class="hud-metric">
-          <span class="metric-label">ELEVATION</span>
-          <div class="metric-val-row">
-            <span class="metric-unit">FL</span>
-            <span id="floor-counter" class="metric-num">0</span>
+      <!-- Top Center: Authentic Retro-Arcade Scoreboard (STAGE · 1UP SCORE · HI-SCORE) -->
+      <div class="hud-panel hud-arcade-scoreboard">
+        <!-- Left: Stage / Elevation -->
+        <div class="arcade-score-col arcade-elev-col">
+          <div class="arcade-tag-row">
+            <span class="arcade-lbl-tag cyan">STAGE</span>
+          </div>
+          <div class="arcade-digits-row">
+            <span class="arcade-prefix">FL</span>
+            <span id="floor-counter" class="arcade-num cyan-glow">0</span>
           </div>
         </div>
-        <div class="hud-divider"></div>
-        <div class="hud-metric">
-          <span class="metric-label">SCORE</span>
-          <span id="score-counter" class="metric-num score-color">000000</span>
+
+        <div class="arcade-divider-bar"></div>
+
+        <!-- Center: 1UP & Score -->
+        <div class="arcade-score-col arcade-main-score">
+          <div class="arcade-tag-row center">
+            <span class="arcade-1up-blink">1UP</span>
+            <span class="arcade-lbl-tag gold">SCORE</span>
+          </div>
+          <div class="arcade-digits-row">
+            <span id="score-counter" class="arcade-num gold-glow arcade-large">000000</span>
+          </div>
+        </div>
+
+        <div class="arcade-divider-bar"></div>
+
+        <!-- Right: Hi-Score Record -->
+        <div class="arcade-score-col arcade-hi-score">
+          <div class="arcade-tag-row right">
+            <span class="arcade-lbl-tag red">HI-SCORE</span>
+          </div>
+          <div class="arcade-digits-row">
+            <span id="hiscore-counter" class="arcade-num red-glow">000000</span>
+          </div>
         </div>
       </div>
 
-      <!-- Top Right: Active Arsenal -->
-      <div class="hud-panel hud-top-right">
-        <div class="weapon-readout">
-          <span id="weapon-name" class="weapon-callout">COMM-RIFLE</span>
-          <div class="ammo-readout">
+      <!-- Top Right: Active Arsenal Card (Styled like combat_ui_hud.png) -->
+      <div class="hud-panel hud-top-right combat-hud-card weapon-hud-card">
+        <div class="weapon-info-header">
+          <div class="weapon-name-line">
+            <span class="weapon-subtag">WEAPON:</span>
+            <span id="weapon-name" class="weapon-callout">COMM-RIFLE</span>
+          </div>
+          <div class="ammo-count-line">
+            <span class="ammo-lbl">AMMO:</span>
             <span id="ammo-count" class="ammo-digit">∞</span>
-            <span class="ammo-lbl">RDS</span>
+          </div>
+        </div>
+        <div class="weapon-preview-row">
+          <div class="weapon-visual-box">
+            <img id="weapon-icon" src="/assets/pickup_rifle.png" alt="Weapon" class="weapon-icon-img" />
+            <span id="weapon-type-code" class="weapon-type-code">RF</span>
+          </div>
+          <div class="weapon-capacity-block">
+            <div class="capacity-header">
+              <span class="capacity-lbl">RELOAD / CAP</span>
+              <span id="ammo-pct-text" class="capacity-pct">100%</span>
+            </div>
+            <div id="ammo-gauge-track" class="ammo-gauge-track">
+              <div id="ammo-gauge-fill" class="ammo-gauge-fill" style="width: 100%;"></div>
+              <div class="gauge-pills-overlay"></div>
+            </div>
           </div>
         </div>
       </div>
 
-      <!-- Dynamic Combo Banner Popup -->
+      <!-- Dynamic Combo Banner with Ranks (Faithful to combat_ui_hud.png shield & stars) -->
       <div id="combo-display" class="combo-banner">
-        <div id="combo-text" class="combo-rank-shout">SUPER!</div>
-        <div id="combo-multiplier" class="combo-sub">COMBO x6</div>
-        <div class="combo-meter-frame">
-          <div id="combo-timer-bar" class="combo-meter-fill"></div>
+        <div class="combo-rank-capsule">
+          <span class="rank-capsule-tag">RANK:</span>
+          <span id="combo-rank-capsule-title" class="rank-capsule-title">CYBER ELITE</span>
+        </div>
+        <div class="combo-shield-container">
+          <div class="combo-stars-flank left">★★★</div>
+          <div id="combo-rank-badge" class="combo-shield-badge">
+            <span id="combo-rank-letter">S</span>
+            <div class="combo-shield-flames"></div>
+            <div class="combo-shield-ribbon">
+              <span id="combo-multiplier">COMBO x6</span>
+            </div>
+          </div>
+          <div class="combo-stars-flank right">★★★</div>
+        </div>
+        <div class="combo-info-wrap">
+          <div id="combo-text" class="combo-rank-shout">GREAT!</div>
+          <div class="combo-meter-frame">
+            <div id="combo-timer-bar" class="combo-meter-fill"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Cinematic Sector Transition Alert Banner -->
+      <div id="sector-banner" class="sector-banner hidden">
+        <div class="sector-banner-deco left"></div>
+        <div class="sector-banner-content">
+          <div id="sector-banner-tag" class="sector-banner-tag">▲ ELEVATION CHECKPOINT CLEARED ▲</div>
+          <div id="sector-banner-title" class="sector-banner-title">ENTERING SECTOR 02 // CITADEL SHAFT</div>
+          <div id="sector-banner-sub" class="sector-banner-sub">ATMOSPHERIC ELECTRICAL STORM DECK DETECTED</div>
+        </div>
+        <div class="sector-banner-deco right"></div>
+      </div>
+
+      <!-- Bottom: Dynamic Boss Health Bar (Centered at Bottom above keybinds) -->
+      <div id="boss-hud" class="boss-hud-bar hidden">
+        <div class="boss-hud-header">
+          <div class="boss-warning-tag"><span class="blink-symbol">⚠</span> BOSS ENGAGEMENT <span class="blink-symbol">⚠</span></div>
+          <div id="boss-name" class="boss-title">APEX GUNSHIP: VALKYRIE-9</div>
+          <div id="boss-sector-tag" class="boss-sector">SECTOR 01 FLAGSHIP</div>
+        </div>
+        <div class="boss-bar-frame">
+          <div id="boss-bar-fill" class="boss-bar-fill" style="width: 100%;"></div>
+          <div id="boss-bar-hp-text" class="boss-bar-text">450 / 450 HP</div>
         </div>
       </div>
 
@@ -226,6 +320,39 @@
       </div>
     </div>
 
+    <!-- Campaign Story Transmission Cutscene Modal -->
+    <div id="campaign-modal" class="screen-modal campaign-comms-modal">
+      <div class="comms-panel">
+        <div class="comms-top-bar">
+          <span class="comms-tag"><span class="blink-symbol">●</span> PRIORITY COMMS TRANSMISSION</span>
+          <span class="comms-cipher">ENCRYPTION: QUANTUM-7 // SECURED</span>
+        </div>
+        <div class="comms-main-view">
+          <div class="comms-hologram-avatar">
+            <img src="/assets/icon_128.png" alt="High Command" class="comms-portrait" />
+            <div class="comms-officer-title">HQ TACTICAL COMMAND</div>
+          </div>
+          <div class="comms-dialogue-block">
+            <div id="comms-dialogue-header" class="comms-header-title">SECTOR 01 SECURED // ELEVATION GRANTED</div>
+            <div id="comms-dialogue-text" class="comms-body-message">
+              Outstanding performance, Vanguard! Sector 01 Gunship has been neutralized. The ground citadel gates are open. Ascend into the Sector 02 Shaft!
+            </div>
+            <div class="comms-rewards-row">
+              <span class="comms-reward-item">✓ FULL ARMOR RESTORED</span>
+              <span class="comms-reward-item">✓ +50,000 COMBAT MERIT</span>
+              <span class="comms-reward-item">✓ SPECIAL ARSENAL REPLENISHED</span>
+            </div>
+          </div>
+        </div>
+        <div class="comms-action-row">
+          <button id="btn-comms-proceed" class="comms-proceed-btn">
+            <span>ASCEND TO NEXT SECTOR</span>
+            <span class="key-hint">[SPACE / CLICK]</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- Game Over Modal -->
     <div id="game-over-modal" class="screen-modal">
       <div class="tactical-modal-card debrief-card">
@@ -283,10 +410,12 @@
       </div>
     </div>
 
-    <!-- Custom Aim Crosshair -->
+    <!-- Custom Aim Crosshair with Lock Telemetry (matching combat_ui_hud.png) -->
     <div id="custom-crosshair" class="custom-crosshair">
+      <div class="crosshair-outer-brackets"></div>
       <div class="crosshair-ring"></div>
       <div class="crosshair-dot"></div>
+      <span id="crosshair-lock" class="crosshair-lock-lbl">LOCK: SCAN</span>
     </div>
   </div>
 

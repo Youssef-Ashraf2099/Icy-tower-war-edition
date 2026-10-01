@@ -88,10 +88,10 @@ export class PlatformManager {
       // Buffer zones right before and after checkpoints are always safe NORMAL platforms
       const isNearCheckpoint = (floor % 50 === 49 || floor % 50 === 1);
 
-      // Platform width
+      // Wider platforms for fluid sprinting, higher momentum jumps, and chaotic combat (expanded as requested)
       let width = Math.max(
-        110,
-        220 - Math.min(70, Math.floor(floor / 15) * 12) + (Math.random() * 30 - 15)
+        220,
+        340 - Math.min(80, Math.floor(floor / 20) * 12) + (Math.random() * 40 - 20)
       );
 
       // Enforce: At least 4 safe floors between any HAZARD platforms
@@ -111,7 +111,7 @@ export class PlatformManager {
         } else if (canBeHazard && rand < 0.44) {
           type = 'HAZARD';
           this.lastHazardFloor = floor;
-          width = Math.min(135, width); // Shorter width so player can jump past it
+          width = Math.min(180, width); // Safe jumpable hazard width
         }
       }
 
@@ -170,9 +170,11 @@ export class PlatformManager {
   }
 
   update(dt, cameraY, player) {
-    const currentTopFloor = Math.floor((-cameraY + 900) / PLATFORM_CONFIG.STEP_HEIGHT) + 25;
-    if (currentTopFloor > this.highestFloorGenerated) {
-      this.generateUpTo(currentTopFloor);
+    // Robust Infinite Upward Generation: always keep 45 floors ahead of player regardless of starting floor or camera offset
+    const playerFloor = player ? player.highestFloor : 0;
+    const neededFloor = Math.max(playerFloor + 45, this.highestFloorGenerated);
+    if (this.highestFloorGenerated < playerFloor + 35) {
+      this.generateUpTo(playerFloor + 50);
     }
 
     // Deactivate Floor 0 once player climbs far up into the tower
@@ -471,8 +473,8 @@ export class PlatformManager {
     ctx.fillStyle = '#00f0ff';
     ctx.shadowColor = '#00f0ff';
     ctx.shadowBlur = 14;
-    ctx.textAlign = 'center';
-    ctx.fillText(`★ CHECKPOINT: SECTOR 0${Math.floor(p.floor / 50)} (FL ${p.floor}) ★`, cx, screenY - 26);
+    const sectorNum = Math.floor(p.floor / 50) + 1;
+    ctx.fillText(`★ CHECKPOINT: SECTOR 0${sectorNum} (FL ${p.floor}) ★`, cx, screenY - 26);
     ctx.shadowBlur = 0;
 
     // 6. Military Stencils on Deck Face

@@ -79,11 +79,11 @@ export const WEAPONS = {
 };
 
 export const COMBO_RANKS = [
-  { minCount: 25, label: 'UNSTOPPABLE!', color: '#c084fc', pointsMultiplier: 6.0, badgeIndex: 6 },
-  { minCount: 18, label: 'AIR SUPERIORITY!', color: '#00f0ff', pointsMultiplier: 4.5, badgeIndex: 5 },
-  { minCount: 13, label: 'BRUTAL!', color: '#ff2a4b', pointsMultiplier: 3.5, badgeIndex: 4 },
-  { minCount: 9, label: 'SUPER!', color: '#ff7700', pointsMultiplier: 2.8, badgeIndex: 3 },
-  { minCount: 6, label: 'GREAT!', color: '#ffd000', pointsMultiplier: 2.2, badgeIndex: 2 },
-  { minCount: 4, label: 'SWEET!', color: '#44d0ff', pointsMultiplier: 1.7, badgeIndex: 1 },
-  { minCount: 2, label: 'GOOD!', color: '#cd7f32', pointsMultiplier: 1.3, badgeIndex: 0 }
+  { minCount: 25, label: 'UNSTOPPABLE!', rank: 'SSS', color: '#c084fc', pointsMultiplier: 6.0, badgeIndex: 6 },
+  { minCount: 18, label: 'AIR SUPERIORITY!', rank: 'SS', color: '#00f0ff', pointsMultiplier: 4.5, badgeIndex: 5 },
+  { minCount: 13, label: 'BRUTAL!', rank: 'S', color: '#ff2a4b', pointsMultiplier: 3.5, badgeIndex: 4 },
+  { minCount: 9, label: 'SUPER!', rank: 'A', color: '#ff7700', pointsMultiplier: 2.8, badgeIndex: 3 },
+  { minCount: 6, label: 'GREAT!', rank: 'B', color: '#ffd000', pointsMultiplier: 2.2, badgeIndex: 2 },
+  { minCount: 4, label: 'SWEET!', rank: 'C', color: '#44d0ff', pointsMultiplier: 1.7, badgeIndex: 1 },
+  { minCount: 2, label: 'GOOD!', rank: 'D', color: '#cd7f32', pointsMultiplier: 1.3, badgeIndex: 0 }
 ];

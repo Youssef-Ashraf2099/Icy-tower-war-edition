@@ -69,8 +69,45 @@ export class EnemyManager {
     }
   }
 
+  spawnCheckpointBoss(floor, cameraY, screenW = window.innerWidth || 1024) {
+    if (this.boss) return; // already active
+
+    const sectorNum = Math.floor(floor / 50);
+    const bossConfigs = {
+      1: { name: 'APEX GUNSHIP: VALKYRIE-9', sectorTag: 'SECTOR 01 FLAGSHIP', hp: 450, fireInterval: 0.22, missileInterval: 3.4, bulletDmg: 10, missileDmg: 24, bulletSpeed: 460 },
+      2: { name: 'CYBER DREADNOUGHT: TITAN-CORE', sectorTag: 'SECTOR 02 SUPERWEAPON', hp: 750, fireInterval: 0.18, missileInterval: 2.8, bulletDmg: 14, missileDmg: 28, bulletSpeed: 520 },
+      3: { name: 'ORBITAL SENTINEL: STRATOS-X', sectorTag: 'SECTOR 03 HIGH-ALTITUDE ACE', hp: 1100, fireInterval: 0.14, missileInterval: 2.3, bulletDmg: 16, missileDmg: 32, bulletSpeed: 580 },
+      4: { name: 'STATION OVERLORD: EXOSPHERE-1', sectorTag: 'SECTOR 04 SUPREME COMMAND', hp: 1600, fireInterval: 0.12, missileInterval: 2.0, bulletDmg: 18, missileDmg: 36, bulletSpeed: 640 }
+    };
+
+    const cfg = bossConfigs[sectorNum] || bossConfigs[1];
+
+    this.boss = {
+      floor,
+      name: cfg.name,
+      sectorTag: cfg.sectorTag,
+      x: screenW / 2,
+      y: cameraY - 140, // Drops in dramatically from above
+      targetY: cameraY + 160,
+      width: 140,
+      height: 80,
+      hp: cfg.hp,
+      maxHp: cfg.hp,
+      strafeTimer: 0,
+      gatlingTimer: 0.8,
+      missileTimer: 2.4,
+      fireInterval: cfg.fireInterval,
+      missileInterval: cfg.missileInterval,
+      bulletDmg: cfg.bulletDmg,
+      missileDmg: cfg.missileDmg,
+      bulletSpeed: cfg.bulletSpeed
+    };
+
+    sounds.playExplosion(false);
+  }
+
   checkBossSpawn(floor, cameraY, screenW = window.innerWidth || 1024) {
-    // Disabled as requested by user: will be reintroduced in a future update on designated checkpoint floors
+    // Handled explicitly by Game.js on checkpoint platform encounter
     return;
   }
 
@@ -81,22 +118,22 @@ export class EnemyManager {
     // Update Boss
     if (this.boss) {
       const b = this.boss;
-      b.y += (cameraY + 180 - b.y) * 2 * dt;
-      b.strafeTimer += dt * 1.3;
-      b.x = (screenW / 2) + Math.sin(b.strafeTimer) * (screenW * 0.32);
+      b.y += (cameraY + 180 - b.y) * 2.2 * dt;
+      b.strafeTimer += dt * 1.35;
+      b.x = (screenW / 2) + Math.sin(b.strafeTimer) * (screenW * 0.34);
 
       // Gatling fire
       b.gatlingTimer -= dt;
       if (b.gatlingTimer <= 0) {
-        b.gatlingTimer = 0.22;
+        b.gatlingTimer = b.fireInterval || 0.22;
         const angle = Math.atan2(py - b.y, px - b.x);
         this.enemyBullets.push({
           x: b.x + (Math.random() * 40 - 20),
           y: b.y + 35,
-          vx: Math.cos(angle) * 460,
-          vy: Math.sin(angle) * 460,
+          vx: Math.cos(angle) * (b.bulletSpeed || 460),
+          vy: Math.sin(angle) * (b.bulletSpeed || 460),
           radius: 4.5,
-          damage: 12,
+          damage: b.bulletDmg || 12,
           color: '#ff2a4b'
         });
       }
@@ -104,16 +141,16 @@ export class EnemyManager {
       // Missile salvo
       b.missileTimer -= dt;
       if (b.missileTimer <= 0) {
-        b.missileTimer = 3.8;
+        b.missileTimer = b.missileInterval || 3.4;
         for (let i = -1; i <= 1; i += 2) {
           const missileAngle = Math.atan2(py - b.y, px - (b.x + i * 50));
           this.enemyBullets.push({
             x: b.x + i * 50,
             y: b.y + 25,
-            vx: Math.cos(missileAngle) * 290,
-            vy: Math.sin(missileAngle) * 290,
-            radius: 6,
-            damage: 26,
+            vx: Math.cos(missileAngle) * 310,
+            vy: Math.sin(missileAngle) * 310,
+            radius: 6.5,
+            damage: b.missileDmg || 26,
             color: '#ff9500'
           });
         }

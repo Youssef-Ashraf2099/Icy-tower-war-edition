@@ -7,6 +7,7 @@ import { WeaponManager } from '../combat/Weapons.js';
 import { EnemyManager } from '../combat/Enemies.js';
 import { ParticleSystem } from '../juice/ParticleSystem.js';
 import { ComboManager } from '../juice/ComboManager.js';
+import { InteractiveBackground } from '../juice/InteractiveBackground.js';
 
 export class Game {
   constructor(canvas) {
@@ -25,6 +26,7 @@ export class Game {
     this.enemies = new EnemyManager();
     this.particles = new ParticleSystem();
     this.combos = new ComboManager();
+    this.interactiveBg = new InteractiveBackground(document.getElementById('interactive-bg-wrap'));
 
     this.state = 'MENU';
     this.score = 0;
@@ -40,6 +42,10 @@ export class Game {
     this.currentCheckpointFloor = 0;
     this.fluidTime = 0;
     this.initFluidBubbles();
+
+    this.defeatedBosses = new Set();
+    this.announcedSectors = new Set();
+    this.commsKeyHandler = null;
 
     this.keys = {};
     this.mouse = {
@@ -132,15 +138,34 @@ export class Game {
       const text = document.getElementById('combo-text');
       const mult = document.getElementById('combo-multiplier');
       const bar = document.getElementById('combo-timer-bar');
+      const badge = document.getElementById('combo-rank-badge');
+      const letter = document.getElementById('combo-rank-letter');
 
       if (!display) return;
 
       if (info.isActive && info.count > 0) {
         display.classList.add('active');
+        const rankLetter = info.rank ? (info.rank.rank || 'D') : 'D';
+        const rankColor = info.rank ? info.rank.color : '#cd7f32';
+        const rankTitle = info.rank ? info.rank.label : 'CYBER COMBAT';
+
         text.innerText = info.rank ? info.rank.label : `${info.count} FLOORS!`;
-        if (info.rank) text.style.color = info.rank.color;
-        mult.innerText = `COMBO x${info.count} (+${Math.floor(info.count * 100)} PTS)`;
+        if (info.rank) text.style.color = rankColor;
+        mult.innerText = `COMBO x${info.count}`;
         bar.style.width = `${info.timerPct * 100}%`;
+
+        const titleEl = document.getElementById('combo-rank-capsule-title');
+        if (titleEl) {
+          titleEl.innerText = rankTitle;
+          titleEl.style.color = rankColor;
+        }
+
+        // Military Rank Shield Badge
+        if (badge && letter) {
+          letter.innerText = rankLetter;
+          badge.style.borderColor = rankColor;
+          badge.style.boxShadow = `0 0 25px ${rankColor}`;
+        }
       } else {
         display.classList.remove('active');
       }
@@ -172,7 +197,13 @@ export class Game {
     this.state = 'PLAYING';
     this.score = startingFloor > 0 ? startingFloor * 500 : 0;
 
-    // Center player in current window width
+    this.defeatedBosses.clear();
+    this.announcedSectors.clear();
+    if (startingFloor >= 50) this.announcedSectors.add(1);
+    if (startingFloor >= 100) this.announcedSectors.add(2);
+    if (startingFloor >= 150) this.announcedSectors.add(3);
+    if (startingFloor >= 200) this.announcedSectors.add(4);
+
     this.player.reset(this.width, startingFloor);
     this.player.x = this.width / 2 - this.player.width / 2;
     this.platforms.reset(startingFloor);
@@ -190,6 +221,11 @@ export class Game {
 
     const dangerWarning = document.getElementById('danger-warning');
     if (dangerWarning) dangerWarning.style.display = 'none';
+
+    const commsModal = document.getElementById('campaign-modal');
+    if (commsModal) commsModal.classList.remove('active');
+    const bossHud = document.getElementById('boss-hud');
+    if (bossHud) bossHud.classList.add('hidden');
 
     document.getElementById('main-menu').classList.remove('active');
     document.getElementById('game-over-modal').classList.remove('active');
@@ -252,8 +288,18 @@ export class Game {
   }
 
   update(dt) {
+    this.lastDt = dt;
     if (this.state !== 'PLAYING') {
       this.particles.update(dt, this.platforms.platforms);
+      if (this.interactiveBg) {
+        this.interactiveBg.update(
+          this.cameraY,
+          this.player ? this.player.highestFloor : 0,
+          0,
+          0,
+          dt
+        );
+      }
       return;
     }
 
@@ -293,6 +339,9 @@ export class Game {
         this.particles
       );
       this.player.applyRecoil(recoil.rx, recoil.ry);
+      if (this.interactiveBg) {
+        this.interactiveBg.triggerWeaponFire(this.weapons.currentWeapon.id);
+      }
     }
 
     // Update Player & Platforms
@@ -310,20 +359,36 @@ export class Game {
       this.currentCheckpointFloor = cpFloor;
       // Completely pause thermal fluid from rising while player is on checkpoint
       this.dangerPaused = true;
-      this.dangerY = this.cameraY + this.height + 400; // Drop far below screen
+      this.dangerY = this.cameraY + this.height + 600; // Drop far below screen
       this.score += 2500;
       this.particles.addFloatingText(
         this.player.x + this.player.width / 2,
         this.player.y - 40,
-        'THERMAL FLUID HALTED',
+        `★ CHECKPOINT FL-${cpFloor} REACHED ★`,
         '#00f0ff',
         22
       );
       this.updateMenuStats();
+
+      // Trigger Sector Boss Encounter if not already defeated in this run!
+      if (cpFloor > 0 && cpFloor % 50 === 0 && !this.defeatedBosses.has(cpFloor)) {
+        this.enemies.spawnCheckpointBoss(cpFloor, this.cameraY, this.width);
+        this.particles.addFloatingText(
+          this.player.x + this.player.width / 2,
+          this.player.y - 70,
+          '⚠ SECTOR BOSS INCOMING! ⚠',
+          '#ff2a4b',
+          28
+        );
+      }
     }
 
-    // Unpause when player proceeds beyond the checkpoint floor into higher elevation
-    if (this.dangerPaused && this.player.highestFloor > this.currentCheckpointFloor) {
+    // Keep danger strictly frozen while fighting a boss
+    if (this.enemies.boss) {
+      this.dangerPaused = true;
+      this.dangerY = this.cameraY + this.height + 600;
+    } else if (this.dangerPaused && this.player.highestFloor > this.currentCheckpointFloor + 1) {
+      // Unpause when player proceeds beyond the checkpoint floor into higher elevation
       this.dangerPaused = false;
       this.dangerY = this.cameraY + this.height + 250;
       this.particles.addFloatingText(
@@ -378,6 +443,16 @@ export class Game {
       this.gameOver();
     }
 
+    if (this.interactiveBg) {
+      this.interactiveBg.update(
+        this.cameraY,
+        this.player ? this.player.highestFloor : 0,
+        this.player ? this.player.adrenaline : 0,
+        this.combos ? this.combos.comboCount : 0,
+        effectiveDt
+      );
+    }
+    this.updateCrosshairLock();
     this.updateHUD();
   }
 
@@ -650,6 +725,7 @@ export class Game {
   killEnemy(e, index) {
     sounds.playExplosion(false);
     this.particles.addExplosion(e.x + e.width / 2, e.y + e.height / 2, false);
+    if (this.interactiveBg) this.interactiveBg.triggerExplosion(0.35);
     this.enemies.enemies.splice(index, 1);
     this.enemies.totalKills++;
 
@@ -663,11 +739,115 @@ export class Game {
 
   killBoss() {
     sounds.playExplosion(true);
-    this.particles.addExplosion(this.enemies.boss.x, this.enemies.boss.y, true);
+    const b = this.enemies.boss;
+    const bossFloor = b ? b.floor : this.currentCheckpointFloor;
+    this.defeatedBosses.add(bossFloor);
+    this.particles.addExplosion(b.x, b.y, true);
+    this.particles.addExplosion(b.x - 50, b.y + 25, true);
+    this.particles.addExplosion(b.x + 50, b.y - 25, true);
+    if (this.interactiveBg) this.interactiveBg.triggerExplosion(1.5);
     this.score += 50000;
     this.enemies.boss = null;
-    this.particles.addFloatingText(this.width / 2, this.cameraY + 200, 'BOSS ELIMINATED! +50,000', '#ffd700', 34);
+    this.particles.addFloatingText(this.width / 2, this.cameraY + 200, '★ SECTOR BOSS DESTROYED! +50,000 ★', '#ffd700', 30);
     this.combos.addCombo(10, true);
+
+    // Trigger Campaign Story Cutscene Modal!
+    this.showCampaignTransmission(bossFloor);
+  }
+
+  showCampaignTransmission(floor) {
+    this.state = 'COMMS_CUTSCENE';
+    // Full armor restore on victory
+    this.player.hp = this.player.maxHp;
+    this.player.adrenaline = this.player.maxAdrenaline;
+    // Replenish special weapon ammo
+    this.weapons.addAmmo(30);
+
+    const modal = document.getElementById('campaign-modal');
+    const titleEl = document.getElementById('comms-dialogue-header');
+    const msgEl = document.getElementById('comms-dialogue-text');
+    const proceedBtn = document.getElementById('btn-comms-proceed');
+
+    const sectorNum = Math.max(1, Math.floor(floor / 50));
+    const commsData = {
+      1: {
+        title: 'SECTOR 01 SECURED // ELEVATION GRANTED',
+        msg: 'Outstanding performance, Vanguard! Valkyrie-9 Gunship has been neutralized. The ground citadel gates are open. Ascend into the Sector 02 Citadel Shaft and watch out for internal electrical storms!'
+      },
+      2: {
+        title: 'SECTOR 02 BREACHED // REACTOR OVERLOAD',
+        msg: 'Incredible combat execution! Titan-Core Dreadnought has been eliminated. The internal reactor is breaching. Climb through the storm deck into Sector 03 Atmospheric Spires!'
+      },
+      3: {
+        title: 'SECTOR 03 CLEARED // EXOSPHERE CLEARANCE',
+        msg: 'Stratos-X is down! You have broken through the cloud barrier into the Sector 04 Orbital Space Elevator! Prepare for low-gravity ascent and cosmic defense satellites!'
+      },
+      4: {
+        title: 'ORBITAL APEX DOMINATED // SUPREME VICTORY',
+        msg: 'MISSION ACCOMPLISHED! Overlord neutralized. The orbital citadel is liberated. You are an elite legend of the War Tower!'
+      }
+    };
+
+    const d = commsData[sectorNum] || commsData[1];
+    if (titleEl) titleEl.innerText = d.title;
+    if (msgEl) msgEl.innerText = d.msg;
+
+    if (modal) {
+      modal.classList.add('active');
+    }
+
+    if (this.commsKeyHandler) {
+      window.removeEventListener('keydown', this.commsKeyHandler);
+      this.commsKeyHandler = null;
+    }
+
+    const closeComms = () => {
+      if (this.state !== 'COMMS_CUTSCENE') return;
+      if (this.commsKeyHandler) {
+        window.removeEventListener('keydown', this.commsKeyHandler);
+        this.commsKeyHandler = null;
+      }
+      if (proceedBtn) proceedBtn.blur();
+      if (modal) modal.classList.remove('active');
+      this.state = 'PLAYING';
+      this.canvas.focus();
+      // Super launch boost when resuming into next sector!
+      this.player.vy = -680;
+      this.player.adrenaline = 100;
+      this.particles.addSparks(this.player.x + this.player.width / 2, this.player.y + this.player.height, 28, '#00f0ff');
+      sounds.playJump(3);
+    };
+
+    if (proceedBtn) {
+      proceedBtn.onclick = () => closeComms();
+    }
+
+    // Support Space / Enter key
+    this.commsKeyHandler = (e) => {
+      if (this.state === 'COMMS_CUTSCENE' && (e.code === 'Space' || e.code === 'Enter')) {
+        e.preventDefault();
+        closeComms();
+      }
+    };
+    window.addEventListener('keydown', this.commsKeyHandler);
+  }
+
+  showSectorBanner(sectorNum, sectorName, subtitle) {
+    const banner = document.getElementById('sector-banner');
+    const titleEl = document.getElementById('sector-banner-title');
+    const subEl = document.getElementById('sector-banner-sub');
+    if (!banner || !titleEl || !subEl) return;
+
+    titleEl.innerText = `ENTERING SECTOR 0${sectorNum} // ${sectorName}`;
+    if (subEl) subEl.innerText = subtitle;
+
+    banner.classList.remove('hidden');
+    // Sound effect
+    sounds.playComboFanfare(5);
+
+    setTimeout(() => {
+      banner.classList.add('hidden');
+    }, 3200);
   }
 
   updateHUD() {
@@ -678,7 +858,10 @@ export class Game {
     const floorCounter = document.getElementById('floor-counter');
     const scoreCounter = document.getElementById('score-counter');
     const weaponName = document.getElementById('weapon-name');
+    const weaponIcon = document.getElementById('weapon-icon');
     const ammoCount = document.getElementById('ammo-count');
+    const ammoTrack = document.getElementById('ammo-gauge-track');
+    const ammoFill = document.getElementById('ammo-gauge-fill');
 
     if (hpBar) hpBar.style.width = `${(this.player.hp / this.player.maxHp) * 100}%`;
     if (hpText) hpText.innerText = `${Math.ceil(this.player.hp)} / 100`;
@@ -691,68 +874,139 @@ export class Game {
 
     if (weaponName) weaponName.innerText = this.weapons.currentWeapon.name;
     if (ammoCount) ammoCount.innerText = this.weapons.ammo === Infinity ? '∞' : this.weapons.ammo.toString();
+
+    // Weapon Preview Icon
+    if (weaponIcon) {
+      const weaponIcons = {
+        RIFLE: '/assets/pickup_rifle.png',
+        SHOTGUN: '/assets/pickup_shotgun.png',
+        RPG: '/assets/pickup_rpg.png',
+        RAILGUN: '/assets/pickup_railgun.png'
+      };
+      const iconSrc = weaponIcons[this.weapons.currentWeapon.id] || weaponIcons.RIFLE;
+      if (weaponIcon.getAttribute('src') !== iconSrc) {
+        weaponIcon.setAttribute('src', iconSrc);
+      }
+    }
+
+    // Special Ammo Capacity Gauge
+    const typeCodeEl = document.getElementById('weapon-type-code');
+    const ammoPctEl = document.getElementById('ammo-pct-text');
+    if (typeCodeEl) {
+      const typeCodes = { RIFLE: 'RF', SHOTGUN: 'SG', RPG: 'RPG', RAILGUN: 'RG' };
+      typeCodeEl.innerText = typeCodes[this.weapons.currentWeapon.id] || 'AR';
+    }
+
+    if (ammoTrack && ammoFill) {
+      if (this.weapons.currentWeapon.ammo !== Infinity) {
+        const maxAmmoMap = { SHOTGUN: 48, RPG: 18, RAILGUN: 24 };
+        const maxCap = maxAmmoMap[this.weapons.currentWeapon.id] || 40;
+        const pct = Math.max(0, Math.min(100, (this.weapons.ammo / maxCap) * 100));
+        ammoFill.style.width = `${pct}%`;
+        if (ammoPctEl) ammoPctEl.innerText = `${Math.round(pct)}%`;
+      } else {
+        ammoFill.style.width = '100%';
+        if (ammoPctEl) ammoPctEl.innerText = '100%';
+      }
+    }
+
+    // Dedicated Boss Health Bar
+    const bossHud = document.getElementById('boss-hud');
+    const bossNameEl = document.getElementById('boss-name');
+    const bossSectorEl = document.getElementById('boss-sector-tag');
+    const bossBarFill = document.getElementById('boss-bar-fill');
+    const bossHpText = document.getElementById('boss-bar-hp-text');
+
+    if (this.enemies && this.enemies.boss) {
+      const b = this.enemies.boss;
+      if (bossHud) bossHud.classList.remove('hidden');
+      if (bossNameEl) bossNameEl.innerText = b.name;
+      if (bossSectorEl) bossSectorEl.innerText = b.sectorTag || 'SECTOR BOSS';
+      if (bossBarFill) bossBarFill.style.width = `${Math.max(0, (b.hp / b.maxHp) * 100)}%`;
+      if (bossHpText) bossHpText.innerText = `${Math.ceil(b.hp)} / ${b.maxHp} HP`;
+    } else if (bossHud) {
+      bossHud.classList.add('hidden');
+    }
+
+    const hiScoreCounter = document.getElementById('hiscore-counter');
+    if (hiScoreCounter) hiScoreCounter.innerText = this.highScore.toString().padStart(6, '0');
+  }
+
+  updateCrosshairLock() {
+    const crosshair = document.getElementById('custom-crosshair');
+    const lockLabel = document.getElementById('crosshair-lock');
+    if (!crosshair || !lockLabel) return;
+
+    const worldMouseX = this.mouse.canvasX;
+    const worldMouseY = this.mouse.canvasY + this.cameraY;
+
+    let closestDist = Infinity;
+    let targetFound = false;
+
+    // Check boss first
+    if (this.enemies && this.enemies.boss) {
+      const b = this.enemies.boss;
+      const d = Math.hypot(b.x - worldMouseX, b.y - worldMouseY);
+      if (d < 140) {
+        closestDist = d;
+        targetFound = true;
+      }
+    }
+
+    // Check regular enemies
+    if (this.enemies && this.enemies.enemies) {
+      for (const e of this.enemies.enemies) {
+        const ecx = e.x + e.width / 2;
+        const ecy = e.y + e.height / 2;
+        const d = Math.hypot(ecx - worldMouseX, ecy - worldMouseY);
+        if (d < 95 && d < closestDist) {
+          closestDist = d;
+          targetFound = true;
+        }
+      }
+    }
+
+    if (targetFound) {
+      crosshair.classList.add('locked');
+      const meters = Math.max(12, Math.round(closestDist * 0.6));
+      lockLabel.innerText = `LOCK: ${meters}m`;
+    } else {
+      crosshair.classList.remove('locked');
+      const floor = this.player ? this.player.highestFloor : 0;
+      lockLabel.innerText = `ELEV: FL-${floor}`;
+    }
   }
 
   render() {
     this.ctx.clearRect(0, 0, this.width, this.height);
 
-    // 1. Full-screen Multi-Sector Seamless Background (No Seams, Smooth Sector Transitions!)
-    const currentFloor = this.player ? this.player.highestFloor : 0;
-    const bg1 = assets.getImage('bgSector1') || assets.getImage('background');
-    const bg2 = assets.getImage('bgSector2') || bg1;
-    const bg3 = assets.getImage('bgSector3') || bg2;
-
-    // Sector 1: Floors 0-45 (Foundry Depths)
-    // Sector 1 -> Sector 2 crossfade: Floors 45-55 (Around Checkpoint 1)
-    // Sector 2: Floors 55-95 (War Citadel Spires)
-    // Sector 2 -> Sector 3 crossfade: Floors 95-105 (Around Checkpoint 2)
-    // Sector 3: Floors 105+ (Apex Stratosphere Relay)
-    let primaryBg = bg1;
-    let secondaryBg = null;
-    let transitionAlpha = 0;
-
-    if (currentFloor < 45) {
-      primaryBg = bg1;
-    } else if (currentFloor < 55) {
-      primaryBg = bg1;
-      secondaryBg = bg2;
-      transitionAlpha = (currentFloor - 45) / 10;
-    } else if (currentFloor < 95) {
-      primaryBg = bg2;
-    } else if (currentFloor < 105) {
-      primaryBg = bg2;
-      secondaryBg = bg3;
-      transitionAlpha = (currentFloor - 95) / 10;
-    } else {
-      primaryBg = bg3;
+    // 1. Continuous Multi-Sector Interactive Living Background (Renders bgSector1 to bgSector5 seamlessly)
+    if (this.interactiveBg) {
+      this.interactiveBg.render(
+        this.ctx,
+        this.width,
+        this.height,
+        this.cameraY,
+        this.player,
+        this.lastDt || 0.016,
+        this.particles.shakeOffsetX,
+        this.particles.shakeOffsetY
+      );
     }
 
-    if (primaryBg) {
-      const bgH = Math.max(this.height * 1.5, 1200);
-      const bgYOffset = (this.cameraY * 0.16) % bgH;
-      const startY = -bgYOffset;
+    const currentElevation = this.player && Number.isFinite(this.player.highestFloor) ? this.player.highestFloor : 0;
 
-      const drawSeamlessTiled = (img, alpha = 1.0) => {
-        if (!img) return;
-        this.ctx.save();
-        this.ctx.globalAlpha = alpha;
-        for (let y = startY - bgH; y < this.height + bgH; y += bgH) {
-          this.ctx.drawImage(img, 0, y, this.width, bgH);
-        }
-        this.ctx.restore();
-      };
-
-      drawSeamlessTiled(primaryBg, 1.0);
-      if (secondaryBg && transitionAlpha > 0) {
-        drawSeamlessTiled(secondaryBg, transitionAlpha);
+    // Trigger sector entry alerts as player crosses elevation milestones:
+    const checkAnnouncement = (floorThreshold, secNum, name, sub) => {
+      if (currentElevation >= floorThreshold && !this.announcedSectors.has(secNum)) {
+        this.announcedSectors.add(secNum);
+        this.showSectorBanner(secNum, name, sub);
       }
-    } else {
-      const grad = this.ctx.createLinearGradient(0, 0, 0, this.height);
-      grad.addColorStop(0, '#0a0d14');
-      grad.addColorStop(1, '#1e293b');
-      this.ctx.fillStyle = grad;
-      this.ctx.fillRect(0, 0, this.width, this.height);
-    }
+    };
+    checkAnnouncement(48, 2, 'CITADEL SHAFT', 'ATMOSPHERIC ELECTRICAL STORM DECK DETECTED');
+    checkAnnouncement(98, 3, 'ATMOSPHERIC SPIRES', 'MONOLITHIC CITADEL TOWERS PIERCING CLOUDS');
+    checkAnnouncement(148, 4, 'ORBITAL APEX RING', 'SPACE ELEVATOR TRANSIT // VACUUM EXOSPHERE');
+    checkAnnouncement(198, 5, 'DEEP SPACE DEFENSE', 'COSMIC ZERO-G DEFENSE PERIMETER // STARFIELD');
 
     this.ctx.save();
     this.ctx.translate(this.particles.shakeOffsetX, this.particles.shakeOffsetY);

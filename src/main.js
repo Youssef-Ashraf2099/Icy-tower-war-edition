@@ -8,6 +8,7 @@ window.addEventListener('DOMContentLoaded', async () => {
 
   // Initialize Game Controller
   const game = new Game(canvas);
+  window.game = game;
 
   // Preload Generated Assets
   try {

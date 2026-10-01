@@ -7,6 +7,10 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com">
   <link href="https://fonts.googleapis.com/css2?family=Black+Ops+One&family=Orbitron:wght@500;700;900&family=Rajdhani:wght@600;700;800&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/assets/icon_32.png" />
+  <link rel="icon" type="image/png" sizes="128x128" href="/assets/icon_128.png" />
+  <link rel="apple-touch-icon" href="/assets/icon_128.png" />
   <link rel="stylesheet" href="/src/style.css" />
 </head>
 <body>
@@ -90,112 +94,93 @@
       </div>
     </div>
 
-    <!-- MAIN MENU: Full-Screen Immersive War Room Interface -->
+    <!-- MAIN MENU: Authentic Concept War Tower Interface -->
     <div id="main-menu" class="screen-modal active">
-      <!-- Animated Particle Background Canvas -->
+      <!-- Fullscreen High-Res Concept Atmosphere Artwork -->
+      <div class="menu-concept-bg"></div>
+
+      <!-- Animated Ambient Sparks Canvas -->
       <canvas id="menu-particle-canvas" class="menu-particle-canvas"></canvas>
 
-      <!-- Animated Grid Lines -->
-      <div class="menu-grid-overlay"></div>
+      <!-- Center Operations HUD Container -->
+      <div class="menu-concept-container">
+        <!-- Top Title Block matching concept art -->
+        <div class="concept-title-wrap">
+          <img src="/assets/concept_title_clean.png" alt="WAR TOWER: Airborne Assault" class="concept-title-img" />
+        </div>
 
-      <!-- Full Layout -->
-      <div class="menu-fullscreen-layout">
+        <!-- Center Cyber Hex Buttons Stack -->
+        <div class="concept-buttons-stack">
+          <!-- 1. PLAY Button -->
+          <button id="btn-start" class="concept-hex-btn btn-play-hex" title="Deploy from Floor 0">
+            <div class="hex-badge">
+              <img src="/assets/hex_icon_tower.png" alt="Tower" class="hex-badge-img" />
+            </div>
+            <div class="hex-btn-label">PLAY</div>
+          </button>
 
-        <!-- LEFT: Hero Branding Column -->
-        <div class="menu-hero-col">
-          <!-- Tactical Classification Badge -->
-          <div class="menu-classify-badge">
-            <span class="classify-line"></span>
-            <span class="classify-text">// CLASSIFIED: WAR-EDITION //</span>
-            <span class="classify-line"></span>
+          <!-- Fast Deploy Checkpoint Button (when unlocked FL >= 50) -->
+          <button id="btn-start-checkpoint" class="concept-hex-btn btn-fast-deploy-hex" style="display: none;" title="Fast Deploy at Checkpoint">
+            <div class="hex-badge">
+              <img src="/assets/hex_icon_lightning.png" alt="Lightning" class="hex-badge-img" />
+            </div>
+            <div class="hex-btn-label">FAST DEPLOY <span class="checkpoint-target-text">(FL-50)</span></div>
+          </button>
+
+          <!-- 2. SETTINGS / CONTROLS Button -->
+          <button id="btn-tutorial" class="concept-hex-btn btn-settings-hex" title="Combat Controls & Briefing">
+            <div class="hex-badge">
+              <img src="/assets/hex_icon_gear.png" alt="Settings" class="hex-badge-img" />
+            </div>
+            <div class="hex-btn-label">SETTINGS</div>
+          </button>
+
+          <!-- 3. SOUND / AUDIO Toggle Button (or EXIT) -->
+          <button id="btn-sound-toggle" class="concept-hex-btn btn-exit-hex" title="Toggle Game Audio">
+            <div class="hex-btn-label" id="sound-label">AUDIO ON</div>
+            <div class="hex-badge">
+              <img src="/assets/hex_icon_power.png" alt="Audio" class="hex-badge-img" />
+            </div>
+          </button>
+        </div>
+      </div>
+
+      <!-- Bottom Tactical Console Bar matching concept art -->
+      <div class="concept-bottom-bar">
+        <!-- Left: Console D-pad icons & Status -->
+        <div class="bottom-bar-left">
+          <div class="console-keypad-icons">
+            <span class="console-icon-btn">◄</span>
+            <span class="console-icon-btn">▼</span>
+            <span class="console-icon-btn">►</span>
+            <span class="console-icon-btn">⌧</span>
           </div>
-
-          <!-- Main Title with Glitch Effect -->
-          <div class="menu-title-block">
-            <div class="menu-title-eyebrow">OPERATION</div>
-            <h1 class="menu-war-title" data-text="WAR TOWER">WAR TOWER</h1>
-            <div class="menu-subtitle-ribbon">
-              <span class="subtitle-dash">///</span>
-              <span class="menu-subtitle-text">AIRBORNE ASSAULT</span>
-              <span class="subtitle-dash">///</span>
-            </div>
-          </div>
-
-          <!-- Lore Ticker -->
-          <div class="menu-lore-ticker">
-            <span class="ticker-prefix">INTEL ▶</span>
-            <span class="ticker-content" id="menu-lore-ticker">The tower must not fall. Ascend. Engage all hostiles. Reach the apex.</span>
-          </div>
-
-          <!-- Record Stats Row -->
-          <div class="menu-record-row">
-            <div class="menu-record-cell">
-              <span class="record-cell-label">BEST FLOOR</span>
-              <span id="menu-high-floor" class="record-cell-val">FL-000</span>
-            </div>
-            <div class="menu-record-divider"></div>
-            <div class="menu-record-cell">
-              <span class="record-cell-label">HIGH SCORE</span>
-              <span id="menu-high-score" class="record-cell-val amber">0 PTS</span>
-            </div>
-            <div class="menu-record-divider" id="menu-checkpoint-divider" style="display:none;"></div>
-            <div class="menu-record-cell" id="menu-checkpoint-cell" style="display:none;">
-              <span class="record-cell-label">CHECKPOINT</span>
-              <strong id="menu-checkpoint-stat" class="record-cell-val cyan">FL-50</strong>
-            </div>
+          <span class="diagonal-slats">///</span>
+          <div class="bottom-sys-indicator">
+            <span class="sys-led"></span>
+            <span class="sys-label">SYS_ONLINE</span>
           </div>
         </div>
 
-        <!-- RIGHT: Action Panel -->
-        <div class="menu-action-col">
-          <!-- Tactical Frame Header -->
-          <div class="action-col-header">
-            <span class="action-header-line"></span>
-            <span class="action-header-text">MISSION SELECT</span>
-            <span class="action-header-line"></span>
-          </div>
+        <!-- Center: Career Profile & Records -->
+        <div class="bottom-bar-center">
+          <span class="diagonal-slats">///</span>
+          <span class="bottom-profile-prefix">PROFILE:</span>
+          <span class="bottom-profile-name">COMMANDER_VORTEX</span>
+          <span class="bottom-divider">|</span>
+          <span class="bottom-record-tag">BEST:</span>
+          <span id="menu-high-floor" class="bottom-record-val cyan">FL-000</span>
+          <span class="bottom-divider">|</span>
+          <span class="bottom-record-tag">SCORE:</span>
+          <span id="menu-high-score" class="bottom-record-val amber">0 PTS</span>
+          <span id="menu-checkpoint-stat" class="bottom-checkpoint-stat" style="display: none;"></span>
+          <span class="diagonal-slats">///</span>
+        </div>
 
-          <!-- Primary Action: Start Mission -->
-          <button id="btn-start" class="btn-mission-primary">
-            <div class="btn-mission-icon-wrap">
-              <span class="btn-mission-icon">▶</span>
-            </div>
-            <div class="btn-mission-text-wrap">
-              <span class="btn-mission-label">START MISSION</span>
-              <span class="btn-mission-sub">Deploy from FL-0 · Full Run</span>
-            </div>
-            <div class="btn-mission-arrow">→</div>
-          </button>
-
-          <!-- Checkpoint Deploy Button -->
-          <button id="btn-start-checkpoint" class="btn-mission-checkpoint" style="display: none;">
-            <div class="btn-mission-icon-wrap checkpoint-icon-bg">
-              <span class="btn-mission-icon">⚡</span>
-            </div>
-            <div class="btn-mission-text-wrap">
-              <span class="btn-mission-label">FAST DEPLOY</span>
-              <span class="btn-mission-sub">Resume at <span class="checkpoint-target-text">FL-50</span></span>
-            </div>
-            <div class="btn-mission-arrow cyan-arrow">→</div>
-          </button>
-
-          <!-- Separator -->
-          <div class="action-separator"><span class="sep-line"></span><span class="sep-text">OPTIONS</span><span class="sep-line"></span></div>
-
-          <!-- Secondary Buttons Row -->
-          <div class="menu-sub-row">
-            <button id="btn-tutorial" class="btn-tac-secondary">
-              <span class="tac-btn-icon">⌨</span>
-              <span class="tac-btn-label">CONTROLS</span>
-            </button>
-            <button id="btn-sound-toggle" class="btn-tac-secondary">
-              <span class="tac-btn-icon" id="sound-icon">🔊</span>
-              <span class="tac-btn-label" id="sound-label">AUDIO ON</span>
-            </button>
-          </div>
-
-          <!-- Version Stamp -->
-          <div class="menu-version-stamp">v1.0 · WAR TOWER ENGINE · 2025</div>
+        <!-- Right: Action Hints & Badges -->
+        <div class="bottom-bar-right">
+          <span class="bottom-hint">[CLICK] SELECT</span>
+          <span class="bottom-hint">[W/SPACE] SPRING JUMP</span>
         </div>
       </div>
     </div>

@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>WAR TOWER: Airborne Assault | Icy Tower War Edition</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com">
+  <link href="https://fonts.googleapis.com/css2?family=Black+Ops+One&family=Orbitron:wght@500;700;900&family=Rajdhani:wght@600;700;800&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/src/style.css" />
+</head>
+<body>
+  <!-- Full-Width Responsive Game Viewport -->
+  <div id="game-container">
+    <canvas id="game-canvas"></canvas>
+
+    <!-- Retro CRT Scanline Overlay -->
+    <div id="crt-overlay" class="crt-overlay"></div>
+
+    <!-- In-Game Clean HUD -->
+    <div id="hud" class="hud-layer">
+      <!-- Top Left: Armor & Adrenaline -->
+      <div class="hud-panel hud-top-left">
+        <div class="hud-stat-row">
+          <span class="hud-tag">ARMOR</span>
+          <div class="hud-bar-frame">
+            <div id="hp-bar" class="hud-bar-fill hp-fill" style="width: 100%;"></div>
+            <span id="hp-text" class="hud-bar-val">100 / 100</span>
+          </div>
+        </div>
+        <div class="hud-stat-row">
+          <span class="hud-tag">ADRENALINE</span>
+          <div class="hud-bar-frame">
+            <div id="adrenaline-bar" class="hud-bar-fill adrenaline-fill" style="width: 0%;"></div>
+            <span id="adrenaline-text" class="hud-bar-val">0%</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Top Center: Elevation & Score -->
+      <div class="hud-panel hud-top-center">
+        <div class="hud-metric">
+          <span class="metric-label">ELEVATION</span>
+          <div class="metric-val-row">
+            <span class="metric-unit">FL</span>
+            <span id="floor-counter" class="metric-num">0</span>
+          </div>
+        </div>
+        <div class="hud-divider"></div>
+        <div class="hud-metric">
+          <span class="metric-label">SCORE</span>
+          <span id="score-counter" class="metric-num score-color">000000</span>
+        </div>
+      </div>
+
+      <!-- Top Right: Active Arsenal -->
+      <div class="hud-panel hud-top-right">
+        <div class="weapon-readout">
+          <span id="weapon-name" class="weapon-callout">COMM-RIFLE</span>
+          <div class="ammo-readout">
+            <span id="ammo-count" class="ammo-digit">∞</span>
+            <span class="ammo-lbl">RDS</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Dynamic Combo Banner Popup -->
+      <div id="combo-display" class="combo-banner">
+        <div id="combo-text" class="combo-rank-shout">SUPER!</div>
+        <div id="combo-multiplier" class="combo-sub">COMBO x6</div>
+        <div class="combo-meter-frame">
+          <div id="combo-timer-bar" class="combo-meter-fill"></div>
+        </div>
+      </div>
+
+      <!-- Bottom Danger Warning -->
+      <div id="danger-warning" class="danger-klaxon">
+        <span class="blink-symbol">⚠</span>
+        <span>THERMAL BOMBARDMENT RISING</span>
+        <span class="blink-symbol">⚠</span>
+      </div>
+
+      <!-- Bottom Keybinds Hint -->
+      <div class="bottom-intel-bar">
+        <span>[A/D] SPRINT</span>
+        <span>[W/SPACE] SUPER-JUMP</span>
+        <span>[MOUSE] 360° AIM & SHOOT</span>
+        <span>[S] STOMP</span>
+        <span>[R-CLICK] ADRENALINE</span>
+      </div>
+    </div>
+
+    <!-- MAIN MENU: Full-Screen Immersive War Room Interface -->
+    <div id="main-menu" class="screen-modal active">
+      <!-- Animated Particle Background Canvas -->
+      <canvas id="menu-particle-canvas" class="menu-particle-canvas"></canvas>
+
+      <!-- Animated Grid Lines -->
+      <div class="menu-grid-overlay"></div>
+
+      <!-- Full Layout -->
+      <div class="menu-fullscreen-layout">
+
+        <!-- LEFT: Hero Branding Column -->
+        <div class="menu-hero-col">
+          <!-- Tactical Classification Badge -->
+          <div class="menu-classify-badge">
+            <span class="classify-line"></span>
+            <span class="classify-text">// CLASSIFIED: WAR-EDITION //</span>
+            <span class="classify-line"></span>
+          </div>
+
+          <!-- Main Title with Glitch Effect -->
+          <div class="menu-title-block">
+            <div class="menu-title-eyebrow">OPERATION</div>
+            <h1 class="menu-war-title" data-text="WAR TOWER">WAR TOWER</h1>
+            <div class="menu-subtitle-ribbon">
+              <span class="subtitle-dash">///</span>
+              <span class="menu-subtitle-text">AIRBORNE ASSAULT</span>
+              <span class="subtitle-dash">///</span>
+            </div>
+          </div>
+
+          <!-- Lore Ticker -->
+          <div class="menu-lore-ticker">
+            <span class="ticker-prefix">INTEL ▶</span>
+            <span class="ticker-content" id="menu-lore-ticker">The tower must not fall. Ascend. Engage all hostiles. Reach the apex.</span>
+          </div>
+
+          <!-- Record Stats Row -->
+          <div class="menu-record-row">
+            <div class="menu-record-cell">
+              <span class="record-cell-label">BEST FLOOR</span>
+              <span id="menu-high-floor" class="record-cell-val">FL-000</span>
+            </div>
+            <div class="menu-record-divider"></div>
+            <div class="menu-record-cell">
+              <span class="record-cell-label">HIGH SCORE</span>
+              <span id="menu-high-score" class="record-cell-val amber">0 PTS</span>
+            </div>
+            <div class="menu-record-divider" id="menu-checkpoint-divider" style="display:none;"></div>
+            <div class="menu-record-cell" id="menu-checkpoint-cell" style="display:none;">
+              <span class="record-cell-label">CHECKPOINT</span>
+              <strong id="menu-checkpoint-stat" class="record-cell-val cyan">FL-50</strong>
+            </div>
+          </div>
+        </div>
+
+        <!-- RIGHT: Action Panel -->
+        <div class="menu-action-col">
+          <!-- Tactical Frame Header -->
+          <div class="action-col-header">
+            <span class="action-header-line"></span>
+            <span class="action-header-text">MISSION SELECT</span>
+            <span class="action-header-line"></span>
+          </div>
+
+          <!-- Primary Action: Start Mission -->
+          <button id="btn-start" class="btn-mission-primary">
+            <div class="btn-mission-icon-wrap">
+              <span class="btn-mission-icon">▶</span>
+            </div>
+            <div class="btn-mission-text-wrap">
+              <span class="btn-mission-label">START MISSION</span>
+              <span class="btn-mission-sub">Deploy from FL-0 · Full Run</span>
+            </div>
+            <div class="btn-mission-arrow">→</div>
+          </button>
+
+          <!-- Checkpoint Deploy Button -->
+          <button id="btn-start-checkpoint" class="btn-mission-checkpoint" style="display: none;">
+            <div class="btn-mission-icon-wrap checkpoint-icon-bg">
+              <span class="btn-mission-icon">⚡</span>
+            </div>
+            <div class="btn-mission-text-wrap">
+              <span class="btn-mission-label">FAST DEPLOY</span>
+              <span class="btn-mission-sub">Resume at <span class="checkpoint-target-text">FL-50</span></span>
+            </div>
+            <div class="btn-mission-arrow cyan-arrow">→</div>
+          </button>
+
+          <!-- Separator -->
+          <div class="action-separator"><span class="sep-line"></span><span class="sep-text">OPTIONS</span><span class="sep-line"></span></div>
+
+          <!-- Secondary Buttons Row -->
+          <div class="menu-sub-row">
+            <button id="btn-tutorial" class="btn-tac-secondary">
+              <span class="tac-btn-icon">⌨</span>
+              <span class="tac-btn-label">CONTROLS</span>
+            </button>
+            <button id="btn-sound-toggle" class="btn-tac-secondary">
+              <span class="tac-btn-icon" id="sound-icon">🔊</span>
+              <span class="tac-btn-label" id="sound-label">AUDIO ON</span>
+            </button>
+          </div>
+
+          <!-- Version Stamp -->
+          <div class="menu-version-stamp">v1.0 · WAR TOWER ENGINE · 2025</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Controls Modal -->
+    <div id="tutorial-modal" class="screen-modal">
+      <div class="tactical-modal-card">
+        <div class="tac-modal-header">
+          <span class="tac-modal-tag">OPERATION BRIEFING</span>
+          <h2 class="tac-modal-title">COMBAT CONTROLS</h2>
+        </div>
+        <div class="controls-list-grid">
+          <div class="ctrl-row">
+            <span class="key-badge">A / D</span>
+            <span class="ctrl-desc">Sprint horizontally — speed builds jump momentum</span>
+          </div>
+          <div class="ctrl-row">
+            <span class="key-badge">W / Space</span>
+            <span class="ctrl-desc">Super-Jump · Double-Jump · Wall-Kick</span>
+          </div>
+          <div class="ctrl-row">
+            <span class="key-badge">Mouse</span>
+            <span class="ctrl-desc">360° Dynamic Aim &amp; Weapon Tracking</span>
+          </div>
+          <div class="ctrl-row">
+            <span class="key-badge">Left Click</span>
+            <span class="ctrl-desc">Fire — shoot down for rocket-jump recoil boost</span>
+          </div>
+          <div class="ctrl-row">
+            <span class="key-badge">S</span>
+            <span class="ctrl-desc">Aerial Stomp — slam enemy heads for reset jump</span>
+          </div>
+          <div class="ctrl-row">
+            <span class="key-badge">Right Click</span>
+            <span class="ctrl-desc">Adrenaline Surge — bullet-time when meter full</span>
+          </div>
+          <div class="ctrl-row">
+            <span class="key-badge">W (x2)</span>
+            <span class="ctrl-desc">Double-Jump — second aerial burst mid-air</span>
+          </div>
+        </div>
+        <button id="btn-close-tutorial" class="btn-tac-back">← BACK TO MENU</button>
+      </div>
+    </div>
+
+    <!-- Game Over Modal -->
+    <div id="game-over-modal" class="screen-modal">
+      <div class="tactical-modal-card debrief-card">
+        <!-- Debrief Header -->
+        <div class="debrief-header">
+          <div class="debrief-alert-stripe"></div>
+          <h2 class="debrief-title">MISSION FAILED</h2>
+          <div class="debrief-subtitle">COMBAT DEBRIEF — POST-ACTION REPORT</div>
+        </div>
+
+        <!-- Stat Grid -->
+        <div class="debrief-stat-grid">
+          <div class="debrief-stat-cell">
+            <span class="dstat-icon">🏔</span>
+            <span class="dstat-label">ELEVATION</span>
+            <strong id="final-floor" class="dstat-val">FL-000</strong>
+          </div>
+          <div class="debrief-stat-cell">
+            <span class="dstat-icon">★</span>
+            <span class="dstat-label">SCORE</span>
+            <strong id="final-score" class="dstat-val amber">0</strong>
+          </div>
+          <div class="debrief-stat-cell">
+            <span class="dstat-icon">☠</span>
+            <span class="dstat-label">KILLS</span>
+            <strong id="final-kills" class="dstat-val red">0</strong>
+          </div>
+          <div class="debrief-stat-cell">
+            <span class="dstat-icon">⚡</span>
+            <span class="dstat-label">MAX COMBO</span>
+            <strong id="final-combo" class="dstat-val green">x0</strong>
+          </div>
+        </div>
+
+        <!-- Redeployment Options -->
+        <div class="debrief-actions">
+          <button id="btn-restart-checkpoint" class="btn-mission-checkpoint" style="display: none;">
+            <div class="btn-mission-icon-wrap checkpoint-icon-bg"><span class="btn-mission-icon">⚡</span></div>
+            <div class="btn-mission-text-wrap">
+              <span class="btn-mission-label">FAST REDEPLOY</span>
+              <span class="btn-mission-sub">Resume at <span class="checkpoint-target-text">FL-50</span></span>
+            </div>
+            <div class="btn-mission-arrow cyan-arrow">→</div>
+          </button>
+          <button id="btn-restart" class="btn-mission-primary">
+            <div class="btn-mission-icon-wrap"><span class="btn-mission-icon">↺</span></div>
+            <div class="btn-mission-text-wrap">
+              <span class="btn-mission-label">RETRY MISSION</span>
+              <span class="btn-mission-sub">Restart from FL-0 · Full Run</span>
+            </div>
+            <div class="btn-mission-arrow">→</div>
+          </button>
+          <button id="btn-main-menu" class="btn-tac-back" style="margin-top: 4px;">← ABORT TO MAIN MENU</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Custom Aim Crosshair -->
+    <div id="custom-crosshair" class="custom-crosshair">
+      <div class="crosshair-ring"></div>
+      <div class="crosshair-dot"></div>
+    </div>
+  </div>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>

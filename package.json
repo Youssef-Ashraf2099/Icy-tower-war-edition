@@ -1,0 +1,26 @@
+{
+  "name": "war-tower-airborne-assault",
+  "version": "1.0.0",
+  "description": "Icy Tower War Edition - High-octane vertical platformer with aerial combat, momentum physics, and retro combos",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "tauri": "tauri"
+  },
+  "keywords": [
+    "game",
+    "arcade",
+    "platformer",
+    "icy-tower",
+    "action",
+    "tauri"
+  ],
+  "author": "War Tower Team",
+  "license": "MIT",
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.0.0",
+    "vite": "^6.2.0"
+  }
+}

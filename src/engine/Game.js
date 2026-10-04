@@ -1,6 +1,7 @@
 import { assets } from '../assets/AssetLoader.js';
 import { sprites } from '../assets/SpriteManager.js';
 import { sounds } from '../audio/SoundEffects.js';
+import { music } from '../audio/MusicEngine.js';
 import { Player } from './Player.js';
 import { PlatformManager } from './PlatformManager.js';
 import { WeaponManager } from '../combat/Weapons.js';
@@ -8,6 +9,7 @@ import { EnemyManager } from '../combat/Enemies.js';
 import { ParticleSystem } from '../juice/ParticleSystem.js';
 import { ComboManager } from '../juice/ComboManager.js';
 import { InteractiveBackground } from '../juice/InteractiveBackground.js';
+import { PostProcessing } from '../juice/PostProcessing.js';
 
 export class Game {
   constructor(canvas) {
@@ -27,6 +29,11 @@ export class Game {
     this.particles = new ParticleSystem();
     this.combos = new ComboManager();
     this.interactiveBg = new InteractiveBackground(document.getElementById('interactive-bg-wrap'));
+    this.postProcessing = new PostProcessing(this.canvas);
+    this.music = music;
+
+    // Apply saved screen shake multiplier
+    this.particles.shakeMultiplier = this.postProcessing.settings.shakeMultiplier;
 
     this.state = 'MENU';
     this.score = 0;
@@ -86,12 +93,23 @@ export class Game {
 
   setupInputs() {
     window.addEventListener('keydown', (e) => {
+      // Audio unlocking on first user interaction
+      sounds.init();
+      this.music.init();
+
       // Prevent spacebar from triggering focused DOM buttons & page scrolling
       if (e.code === 'Space') {
         e.preventDefault();
       }
 
       this.keys[e.code] = true;
+
+      // Settings / Pause shortcut
+      if ((e.code === 'Escape' || e.code === 'KeyP') && (this.state === 'PLAYING' || this.state === 'SETTINGS')) {
+        e.preventDefault();
+        this.toggleSettingsModal();
+        return;
+      }
 
       // Only launch from menu on Spacebar if strictly in MENU state
       if (e.code === 'Space' && this.state === 'MENU') {
@@ -120,6 +138,7 @@ export class Game {
 
     this.canvas.addEventListener('mousedown', (e) => {
       sounds.init();
+      this.music.init();
       if (e.button === 0) this.mouse.leftDown = true;
       if (e.button === 2) this.mouse.rightDown = true;
     });
@@ -130,6 +149,19 @@ export class Game {
     });
 
     this.canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+  }
+
+  toggleSettingsModal() {
+    const modal = document.getElementById('tutorial-modal');
+    if (!modal) return;
+    if (this.state === 'SETTINGS') {
+      modal.classList.remove('active');
+      this.state = 'PLAYING';
+      this.canvas.focus();
+    } else if (this.state === 'PLAYING') {
+      this.state = 'SETTINGS';
+      modal.classList.add('active');
+    }
   }
 
   setupComboCallbacks() {
@@ -193,9 +225,14 @@ export class Game {
     this.canvas.focus();
 
     sounds.init();
+    this.music.init();
     sprites.init();
     this.state = 'PLAYING';
     this.score = startingFloor > 0 ? startingFloor * 500 : 0;
+
+    const startingSector = Math.min(5, Math.floor(startingFloor / 50) + 1);
+    this.music.setSector(startingSector);
+    this.music.setState('PLAYING');
 
     this.defeatedBosses.clear();
     this.announcedSectors.clear();
@@ -210,6 +247,15 @@ export class Game {
     this.weapons.setWeapon(startingFloor >= 100 ? 'RAILGUN' : (startingFloor >= 50 ? 'RPG' : 'RIFLE'));
     this.enemies.reset();
     this.combos.reset();
+
+    // Mission start spawn shockwave
+    this.postProcessing.addShockwave(
+      this.player.x + this.player.width / 2,
+      this.player.y + this.player.height,
+      180,
+      '#00f0ff',
+      0.45
+    );
 
     this.cameraY = this.player.y - (this.height * 0.65);
 
@@ -234,8 +280,11 @@ export class Game {
 
   gameOver() {
     this.state = 'GAMEOVER';
+    this.music.setState('GAMEOVER');
     sounds.playExplosion(true);
     this.particles.addExplosion(this.player.x + 16, this.player.y + 20, true);
+    this.postProcessing.triggerAberration(1.0, 0.65);
+    this.postProcessing.addShockwave(this.player.x + 16, this.player.y + 20, 380, '#ff1a3b', 0.6);
 
     if (this.score > this.highScore) {
       this.highScore = this.score;
@@ -291,6 +340,7 @@ export class Game {
     this.lastDt = dt;
     if (this.state !== 'PLAYING') {
       this.particles.update(dt, this.platforms.platforms);
+      this.postProcessing.update(dt, this.player);
       if (this.interactiveBg) {
         this.interactiveBg.update(
           this.cameraY,
@@ -373,6 +423,9 @@ export class Game {
       // Trigger Sector Boss Encounter if not already defeated in this run!
       if (cpFloor > 0 && cpFloor % 50 === 0 && !this.defeatedBosses.has(cpFloor)) {
         this.enemies.spawnCheckpointBoss(cpFloor, this.cameraY, this.width);
+        this.music.setState('BOSS');
+        this.postProcessing.addShockwave(this.width / 2, this.cameraY + 160, 420, '#ff2a4b', 0.8);
+        this.postProcessing.triggerAberration(0.85, 0.5);
         this.particles.addFloatingText(
           this.player.x + this.player.width / 2,
           this.player.y - 70,
@@ -452,6 +505,22 @@ export class Game {
         effectiveDt
       );
     }
+
+    // Update Post-Processing pipeline
+    this.postProcessing.update(effectiveDt, this.player);
+
+    // Update Music dynamics
+    const currentElevation = this.player ? this.player.highestFloor : 0;
+    const currentSector = Math.min(5, Math.floor(currentElevation / 50) + 1);
+    this.music.setSector(currentSector);
+    if (this.enemies.boss && this.music.state !== 'BOSS') {
+      this.music.setState('BOSS');
+    } else if (!this.enemies.boss && this.music.state === 'BOSS') {
+      this.music.setState('PLAYING');
+    }
+    this.music.setAdrenaline(this.player.isOverdrive);
+    this.music.setCombo(this.combos ? this.combos.comboCount : 0);
+
     this.updateCrosshairLock();
     this.updateHUD();
   }
@@ -520,6 +589,7 @@ export class Game {
         this.player.vy > 40
       ) {
         this.player.stompRebound(this.particles);
+        this.postProcessing.addShockwave(e.x + e.width / 2, e.y + e.height / 2, 170, '#ffd700', 0.35);
         e.hp -= 50;
         this.combos.addCombo(1, true);
         this.particles.addFloatingText(e.x + e.width / 2, e.y - 12, 'CRUSH STOMP!', '#ffd700', 20);
@@ -611,6 +681,7 @@ export class Game {
             if (proj.type === 'ROCKET') {
               sounds.playExplosion(false);
               this.particles.addExplosion(plat.x + plat.width / 2, plat.y, false);
+              this.postProcessing.addShockwave(plat.x + plat.width / 2, plat.y, 200, '#ff6600', 0.35);
             }
 
             if (plat.hp <= 0) {
@@ -618,6 +689,7 @@ export class Game {
               plat.isHazardDestroyed = true;
               sounds.playExplosion(false);
               this.particles.addExplosion(plat.x + plat.width / 2, plat.y, false);
+              this.postProcessing.addShockwave(plat.x + plat.width / 2, plat.y, 220, '#00f0ff', 0.4);
               this.particles.addFloatingText(plat.x + plat.width / 2, plat.y - 12, 'SPIKES DESTROYED! +150', '#00ff77', 18);
               this.score += 150;
               this.player.adrenaline = Math.min(this.player.maxAdrenaline, this.player.adrenaline + 15);
@@ -647,6 +719,7 @@ export class Game {
           if (proj.type === 'ROCKET') {
             sounds.playExplosion(true);
             this.particles.addExplosion(proj.x, proj.y, true);
+            this.postProcessing.addShockwave(proj.x, proj.y, 240, '#ff4400', 0.45);
           }
           if (proj.type !== 'PLASMA') {
             this.weapons.projectiles.splice(pi, 1);
@@ -693,6 +766,7 @@ export class Game {
           if (proj.type === 'ROCKET') {
             sounds.playExplosion(false);
             this.particles.addExplosion(proj.x, proj.y, false);
+            this.postProcessing.addShockwave(proj.x, proj.y, 200, '#ff6600', 0.35);
           }
 
           if (proj.type !== 'PLASMA') {
@@ -717,6 +791,7 @@ export class Game {
         eb.y <= py + ph
       ) {
         this.player.takeDamage(eb.damage, this.particles);
+        this.postProcessing.triggerDamage(eb.damage);
         this.enemies.enemyBullets.splice(bi, 1);
       }
     }
@@ -726,6 +801,7 @@ export class Game {
     sounds.playExplosion(false);
     this.particles.addExplosion(e.x + e.width / 2, e.y + e.height / 2, false);
     if (this.interactiveBg) this.interactiveBg.triggerExplosion(0.35);
+    this.postProcessing.addShockwave(e.x + e.width / 2, e.y + e.height / 2, 140, '#00f0ff', 0.3);
     this.enemies.enemies.splice(index, 1);
     this.enemies.totalKills++;
 
@@ -746,6 +822,9 @@ export class Game {
     this.particles.addExplosion(b.x - 50, b.y + 25, true);
     this.particles.addExplosion(b.x + 50, b.y - 25, true);
     if (this.interactiveBg) this.interactiveBg.triggerExplosion(1.5);
+    this.postProcessing.addShockwave(b.x, b.y, 480, '#ffd700', 0.85);
+    this.postProcessing.triggerAberration(1.0, 0.7);
+    this.music.setState('PLAYING');
     this.score += 50000;
     this.enemies.boss = null;
     this.particles.addFloatingText(this.width / 2, this.cameraY + 200, '★ SECTOR BOSS DESTROYED! +50,000 ★', '#ffd700', 30);
@@ -1114,5 +1193,10 @@ export class Game {
     }
 
     this.ctx.restore();
+
+    // 9. Master Screen-Space Post-Processing FX Pass (Shockwaves, Speed Warps, Vignettes, Bullet-Time)
+    if (this.postProcessing) {
+      this.postProcessing.render(this.ctx, this.width, this.height, this.cameraY, this.player);
+    }
   }
 }

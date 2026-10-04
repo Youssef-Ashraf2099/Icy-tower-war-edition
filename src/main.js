@@ -1,6 +1,7 @@
 import { Game } from './engine/Game.js';
 import { assets } from './assets/AssetLoader.js';
 import { sounds } from './audio/SoundEffects.js';
+import { music } from './audio/MusicEngine.js';
 
 window.addEventListener('DOMContentLoaded', async () => {
   const canvas = document.getElementById('game-canvas');
@@ -28,6 +29,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   const tutorialModal = document.getElementById('tutorial-modal');
   const gameOverModal = document.getElementById('game-over-modal');
   const mainMenuModal = document.getElementById('main-menu');
+  const btnHudSettings = document.getElementById('btn-hud-settings');
 
   if (btnStart) {
     btnStart.addEventListener('click', () => {
@@ -41,15 +43,28 @@ window.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
+  // Settings & Briefing Modal Opener
   if (btnTutorial) {
     btnTutorial.addEventListener('click', () => {
+      syncSettingsUI();
       tutorialModal.classList.add('active');
+    });
+  }
+
+  if (btnHudSettings) {
+    btnHudSettings.addEventListener('click', () => {
+      game.toggleSettingsModal();
+      syncSettingsUI();
     });
   }
 
   if (btnCloseTutorial) {
     btnCloseTutorial.addEventListener('click', () => {
       tutorialModal.classList.remove('active');
+      if (game.state === 'SETTINGS') {
+        game.state = 'PLAYING';
+        game.canvas.focus();
+      }
     });
   }
 
@@ -65,22 +80,185 @@ window.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
+  // Master Sound Toggle in Main Menu
   const btnSound = document.getElementById('btn-sound-toggle');
-  const soundIcon = document.getElementById('sound-icon');
   const soundLabel = document.getElementById('sound-label');
+  function updateMenuAudioButton() {
+    const isMasterOn = sounds.enabled || music.enabled;
+    if (soundLabel) soundLabel.textContent = isMasterOn ? 'AUDIO ON' : 'MUTED';
+  }
+
   if (btnSound) {
     btnSound.addEventListener('click', () => {
-      sounds.enabled = !sounds.enabled;
-      if (soundIcon) soundIcon.textContent = sounds.enabled ? '🔊' : '🔇';
-      if (soundLabel) soundLabel.textContent = sounds.enabled ? 'AUDIO ON' : 'AUDIO OFF';
+      const turnOff = sounds.enabled || music.enabled;
+      if (turnOff) {
+        if (!sounds.muted) sounds.toggleMute();
+        if (!music.muted) music.toggleMute();
+      } else {
+        if (sounds.muted) sounds.toggleMute();
+        if (music.muted) music.toggleMute();
+      }
+      updateMenuAudioButton();
+      syncSettingsUI();
     });
   }
+
+  // ── Settings Tabs Switching ──────────────────────────────────────────────
+  const tabBtns = document.querySelectorAll('.settings-tab-btn');
+  const tabPanes = document.querySelectorAll('.settings-tab-pane');
+
+  tabBtns.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      tabBtns.forEach((b) => b.classList.remove('active'));
+      tabPanes.forEach((p) => p.classList.remove('active'));
+      btn.classList.add('active');
+      const targetId = btn.getAttribute('data-tab');
+      const targetPane = document.getElementById(targetId);
+      if (targetPane) targetPane.classList.add('active');
+    });
+  });
+
+  // ── Audio Sliders & Mute Toggles ──────────────────────────────────────────
+  const musicSlider = document.getElementById('music-volume-slider');
+  const musicPct = document.getElementById('music-vol-pct');
+  const btnMusicMute = document.getElementById('btn-toggle-music-mute');
+
+  const sfxSlider = document.getElementById('sfx-volume-slider');
+  const sfxPct = document.getElementById('sfx-vol-pct');
+  const btnSfxMute = document.getElementById('btn-toggle-sfx-mute');
+
+  if (musicSlider) {
+    musicSlider.addEventListener('input', (e) => {
+      const val = parseInt(e.target.value, 10);
+      music.setVolume(val / 100);
+      if (musicPct) musicPct.textContent = `${val}%`;
+      if (music.muted) {
+        music.toggleMute();
+      }
+      updateAudioButtonsUI();
+    });
+  }
+
+  if (btnMusicMute) {
+    btnMusicMute.addEventListener('click', () => {
+      music.toggleMute();
+      updateAudioButtonsUI();
+      updateMenuAudioButton();
+    });
+  }
+
+  if (sfxSlider) {
+    sfxSlider.addEventListener('input', (e) => {
+      const val = parseInt(e.target.value, 10);
+      sounds.setVolume(val / 100);
+      if (sfxPct) sfxPct.textContent = `${val}%`;
+      if (sounds.muted) {
+        sounds.toggleMute();
+      }
+      updateAudioButtonsUI();
+    });
+  }
+
+  if (btnSfxMute) {
+    btnSfxMute.addEventListener('click', () => {
+      sounds.toggleMute();
+      updateAudioButtonsUI();
+      updateMenuAudioButton();
+    });
+  }
+
+  function updateAudioButtonsUI() {
+    if (btnMusicMute) {
+      const isMuted = music.muted || !music.enabled;
+      btnMusicMute.textContent = isMuted ? 'BGM MUTED' : 'BGM ON';
+      btnMusicMute.className = `cyber-toggle-btn ${isMuted ? 'disabled-btn' : 'active'}`;
+    }
+    if (btnSfxMute) {
+      const isMuted = sounds.muted || !sounds.enabled;
+      btnSfxMute.textContent = isMuted ? 'SFX MUTED' : 'SFX ON';
+      btnSfxMute.className = `cyber-toggle-btn ${isMuted ? 'disabled-btn' : 'active'}`;
+    }
+  }
+
+  // ── Graphics & Post-Processing Switches ───────────────────────────────────
+  const toggleCrt = document.getElementById('toggle-fx-crt');
+  const toggleChromatic = document.getElementById('toggle-fx-chromatic');
+  const toggleShockwaves = document.getElementById('toggle-fx-shockwaves');
+  const shakeBtns = document.querySelectorAll('.btn-shake-opt');
+
+  function updateSwitchButton(btn, isEnabled) {
+    if (!btn) return;
+    btn.textContent = isEnabled ? 'ENABLED' : 'DISABLED';
+    btn.className = `cyber-switch-btn ${isEnabled ? 'active' : 'disabled-btn'}`;
+  }
+
+  if (toggleCrt) {
+    toggleCrt.addEventListener('click', () => {
+      const newVal = !game.postProcessing.settings.crt;
+      game.postProcessing.setSetting('crt', newVal);
+      updateSwitchButton(toggleCrt, newVal);
+    });
+  }
+
+  if (toggleChromatic) {
+    toggleChromatic.addEventListener('click', () => {
+      const newVal = !game.postProcessing.settings.chromatic;
+      game.postProcessing.setSetting('chromatic', newVal);
+      updateSwitchButton(toggleChromatic, newVal);
+    });
+  }
+
+  if (toggleShockwaves) {
+    toggleShockwaves.addEventListener('click', () => {
+      const newVal = !game.postProcessing.settings.shockwaves;
+      game.postProcessing.setSetting('shockwaves', newVal);
+      updateSwitchButton(toggleShockwaves, newVal);
+    });
+  }
+
+  shakeBtns.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      shakeBtns.forEach((b) => b.classList.remove('active'));
+      btn.classList.add('active');
+      const mult = parseFloat(btn.getAttribute('data-mult') || '1.0');
+      game.postProcessing.setSetting('shake', mult);
+      game.particles.shakeMultiplier = mult;
+    });
+  });
+
+  function syncSettingsUI() {
+    // Music & SFX sync
+    const mVol = Math.round(music.volume * 100);
+    if (musicSlider) musicSlider.value = mVol;
+    if (musicPct) musicPct.textContent = `${mVol}%`;
+
+    const sVol = Math.round(sounds.volume * 100);
+    if (sfxSlider) sfxSlider.value = sVol;
+    if (sfxPct) sfxPct.textContent = `${sVol}%`;
+
+    updateAudioButtonsUI();
+    updateMenuAudioButton();
+
+    // Graphics sync
+    if (toggleCrt) updateSwitchButton(toggleCrt, game.postProcessing.settings.crt);
+    if (toggleChromatic) updateSwitchButton(toggleChromatic, game.postProcessing.settings.chromatic);
+    if (toggleShockwaves) updateSwitchButton(toggleShockwaves, game.postProcessing.settings.shockwaves);
+
+    const curShake = game.postProcessing.settings.shakeMultiplier;
+    shakeBtns.forEach((btn) => {
+      const bMult = parseFloat(btn.getAttribute('data-mult') || '1.0');
+      btn.classList.toggle('active', Math.abs(bMult - curShake) < 0.05);
+    });
+  }
+
+  syncSettingsUI();
 
   if (btnMainMenu) {
     btnMainMenu.addEventListener('click', () => {
       gameOverModal.classList.remove('active');
       mainMenuModal.classList.add('active');
       game.state = 'MENU';
+      game.music.setState('MENU');
       game.updateMenuStats();
     });
   }

@@ -122,6 +122,9 @@
         </div>
       </div>
 
+      <!-- Quick In-Game Settings / Pause Button -->
+      <button id="btn-hud-settings" class="hud-mini-settings-btn" title="Settings / Briefing [P] or [ESC]">⚙</button>
+
       <!-- Dynamic Combo Banner with Ranks (Faithful to combat_ui_hud.png shield & stars) -->
       <div id="combo-display" class="combo-banner">
         <div class="combo-rank-capsule">
@@ -279,44 +282,107 @@
       </div>
     </div>
 
-    <!-- Controls Modal -->
+    <!-- Settings & Operations Briefing Modal -->
     <div id="tutorial-modal" class="screen-modal">
       <div class="tactical-modal-card">
         <div class="tac-modal-header">
-          <span class="tac-modal-tag">OPERATION BRIEFING</span>
-          <h2 class="tac-modal-title">COMBAT CONTROLS</h2>
+          <span class="tac-modal-tag">TACTICAL OPERATIONS</span>
+          <h2 class="tac-modal-title">SETTINGS &amp; BRIEFING</h2>
         </div>
-        <div class="controls-list-grid">
-          <div class="ctrl-row">
-            <span class="key-badge">A / D</span>
-            <span class="ctrl-desc">Sprint horizontally — speed builds jump momentum</span>
+
+        <!-- Navigation Tabs -->
+        <div class="settings-tabs-row">
+          <button class="settings-tab-btn active" data-tab="tab-audio">AUDIO &amp; BGM</button>
+          <button class="settings-tab-btn" data-tab="tab-graphics">POST-PROCESSING</button>
+          <button class="settings-tab-btn" data-tab="tab-controls">CONTROLS</button>
+        </div>
+
+        <!-- Tab 1: Audio & Synthwave Music -->
+        <div id="tab-audio" class="settings-tab-pane active">
+          <!-- BGM Volume -->
+          <div class="settings-card-group">
+            <div class="settings-group-header">
+              <span>SYNTHWAVE SOUNDTRACK</span>
+              <span id="music-vol-pct" class="settings-val-badge">65%</span>
+            </div>
+            <div class="settings-slider-row">
+              <input type="range" id="music-volume-slider" min="0" max="100" value="65" class="cyber-slider" />
+              <button id="btn-toggle-music-mute" class="cyber-toggle-btn active">BGM ON</button>
+            </div>
           </div>
-          <div class="ctrl-row">
-            <span class="key-badge">W / Space</span>
-            <span class="ctrl-desc">Super-Jump · Double-Jump · Wall-Kick</span>
-          </div>
-          <div class="ctrl-row">
-            <span class="key-badge">Mouse</span>
-            <span class="ctrl-desc">360° Dynamic Aim &amp; Weapon Tracking</span>
-          </div>
-          <div class="ctrl-row">
-            <span class="key-badge">Left Click</span>
-            <span class="ctrl-desc">Fire — shoot down for rocket-jump recoil boost</span>
-          </div>
-          <div class="ctrl-row">
-            <span class="key-badge">S</span>
-            <span class="ctrl-desc">Aerial Stomp — slam enemy heads for reset jump</span>
-          </div>
-          <div class="ctrl-row">
-            <span class="key-badge">Right Click</span>
-            <span class="ctrl-desc">Adrenaline Surge — bullet-time when meter full</span>
-          </div>
-          <div class="ctrl-row">
-            <span class="key-badge">W (x2)</span>
-            <span class="ctrl-desc">Double-Jump — second aerial burst mid-air</span>
+
+          <!-- SFX Volume -->
+          <div class="settings-card-group">
+            <div class="settings-group-header">
+              <span>COMBAT SOUND FX</span>
+              <span id="sfx-vol-pct" class="settings-val-badge">80%</span>
+            </div>
+            <div class="settings-slider-row">
+              <input type="range" id="sfx-volume-slider" min="0" max="100" value="80" class="cyber-slider" />
+              <button id="btn-toggle-sfx-mute" class="cyber-toggle-btn active">SFX ON</button>
+            </div>
           </div>
         </div>
-        <button id="btn-close-tutorial" class="btn-tac-back">← BACK TO MENU</button>
+
+        <!-- Tab 2: Visual Effects & Post-Processing -->
+        <div id="tab-graphics" class="settings-tab-pane">
+          <div class="setting-toggle-row">
+            <span>RETRO CRT SCANLINES</span>
+            <button id="toggle-fx-crt" class="cyber-switch-btn active">ENABLED</button>
+          </div>
+          <div class="setting-toggle-row">
+            <span>CHROMATIC ABERRATION (RGB SPLIT)</span>
+            <button id="toggle-fx-chromatic" class="cyber-switch-btn active">ENABLED</button>
+          </div>
+          <div class="setting-toggle-row">
+            <span>EXPLOSION SHOCKWAVE REFRACTION</span>
+            <button id="toggle-fx-shockwaves" class="cyber-switch-btn active">ENABLED</button>
+          </div>
+          <div class="setting-toggle-row">
+            <span>SCREEN SHAKE INTENSITY</span>
+            <div class="btn-group-shake">
+              <button class="btn-shake-opt" data-mult="0.5">0.5x</button>
+              <button class="btn-shake-opt active" data-mult="1.0">1.0x</button>
+              <button class="btn-shake-opt" data-mult="1.5">1.5x</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab 3: Combat Controls Briefing -->
+        <div id="tab-controls" class="settings-tab-pane">
+          <div class="controls-list-grid">
+            <div class="ctrl-row">
+              <span class="key-badge">A / D</span>
+              <span class="ctrl-desc">Sprint horizontally — speed builds jump momentum</span>
+            </div>
+            <div class="ctrl-row">
+              <span class="key-badge">W / Space</span>
+              <span class="ctrl-desc">Super-Jump · Double-Jump · Wall-Kick</span>
+            </div>
+            <div class="ctrl-row">
+              <span class="key-badge">Mouse</span>
+              <span class="ctrl-desc">360° Dynamic Aim &amp; Weapon Tracking</span>
+            </div>
+            <div class="ctrl-row">
+              <span class="key-badge">Left Click</span>
+              <span class="ctrl-desc">Fire — shoot down for rocket-jump recoil boost</span>
+            </div>
+            <div class="ctrl-row">
+              <span class="key-badge">S</span>
+              <span class="ctrl-desc">Aerial Stomp — slam enemy heads for reset jump</span>
+            </div>
+            <div class="ctrl-row">
+              <span class="key-badge">Right Click</span>
+              <span class="ctrl-desc">Adrenaline Surge — bullet-time when meter full</span>
+            </div>
+            <div class="ctrl-row">
+              <span class="key-badge">P / ESC</span>
+              <span class="ctrl-desc">Quick Pause &amp; Settings Toggle</span>
+            </div>
+          </div>
+        </div>
+
+        <button id="btn-close-tutorial" class="btn-tac-back">← CLOSE / RESUME</button>
       </div>
     </div>
 

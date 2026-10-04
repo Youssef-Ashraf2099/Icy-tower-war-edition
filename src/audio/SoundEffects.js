@@ -1,7 +1,9 @@
 class SoundEngine {
   constructor() {
     this.ctx = null;
-    this.enabled = true;
+    this.volume = parseFloat(localStorage.getItem('wartower_sfx_vol') || '0.8');
+    this.muted = localStorage.getItem('wartower_sfx_muted') === 'true';
+    this.enabled = !this.muted;
     this.masterGain = null;
   }
 
@@ -10,12 +12,32 @@ class SoundEngine {
       const AudioCtx = window.AudioContext || window.webkitAudioContext;
       this.ctx = new AudioCtx();
       this.masterGain = this.ctx.createGain();
-      this.masterGain.gain.value = 0.45;
+      const currentTargetVol = (this.enabled && !this.muted) ? this.volume * 0.45 : 0;
+      this.masterGain.gain.value = currentTargetVol;
       this.masterGain.connect(this.ctx.destination);
     }
     if (this.ctx.state === 'suspended') {
       this.ctx.resume();
     }
+  }
+
+  setVolume(vol) {
+    this.volume = Math.max(0, Math.min(1, vol));
+    localStorage.setItem('wartower_sfx_vol', this.volume.toString());
+    if (this.masterGain && this.ctx && this.enabled && !this.muted) {
+      this.masterGain.gain.setValueAtTime(this.volume * 0.45, this.ctx.currentTime);
+    }
+  }
+
+  toggleMute() {
+    this.muted = !this.muted;
+    this.enabled = !this.muted;
+    localStorage.setItem('wartower_sfx_muted', this.muted.toString());
+    if (this.masterGain && this.ctx) {
+      const target = (this.enabled && !this.muted) ? this.volume * 0.45 : 0;
+      this.masterGain.gain.setValueAtTime(target, this.ctx.currentTime);
+    }
+    return !this.muted;
   }
 
   playJump(tier = 'normal') {

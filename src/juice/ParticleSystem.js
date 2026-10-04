@@ -85,7 +85,8 @@ export class ParticleSystem {
   }
 
   addScreenShake(intensity, duration) {
-    this.shakeIntensity = Math.max(this.shakeIntensity, intensity);
+    const mult = typeof this.shakeMultiplier === 'number' ? this.shakeMultiplier : 1.0;
+    this.shakeIntensity = Math.max(this.shakeIntensity, intensity * mult);
     this.shakeDuration = Math.max(this.shakeDuration, duration);
   }
 
